@@ -59,6 +59,38 @@ func (s Seq[E]) Map2[O any](tf MapF[E, O]) Seq[O] {
 	}
 }
 
+type LenSeq[E any] struct {
+	len int
+	Seq[E]
+}
+
+
+func SliceToLenSeq[S ~[]E, E any](slice S) LenSeq[E] {
+	return LenSeq[E]{
+		len: len(slice),
+		Seq: SliceToSeq(slice),
+	}
+	
+}
+
+func (s LenSeq[E]) FilterEstimate(ff FilterF[E], estimateSize int) LenSeq[E] {
+	s.len = estimateSize
+	s.Seq = s.Seq.Filter(ff)
+	return s
+}
+
+func (s LenSeq[E]) Map[O any](tf MapF[E, O]) LenSeq[O] {
+	return LenSeq[O]{
+		len: s.len,
+		Seq: s.Seq.Map(tf),
+	}
+}
+
+func (s LenSeq[E]) ToSlice() (res []E) {
+	res = make([]E, 0, s.len)
+	return slices.AppendSeq(res, iter.Seq[E](s.Seq))
+}
+
 
 
 
