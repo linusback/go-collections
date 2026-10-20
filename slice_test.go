@@ -237,7 +237,7 @@ func Benchmark_Iter_ItoA(b *testing.B) {
 	benchmarks = append(benchmarks, createIntegerIterBench("itallo", iterIntToStringFilterAlloc)...)
 	benchmarks = append(benchmarks, createIntegerIterBench("normal", loopIntToStringFilter)...)
 	benchmarks = append(benchmarks, createIntegerIterBench("palloc", PreLoopIntToStringFilter)...)
-	b.Logf("size of cache %d\n", len(intCache))
+	b.Logf("size of cache %d, (largest is %d)\n", len(intCache), len(intCache[(len(intCache)-1)]))
 	slices.SortFunc(benchmarks, func(a, b *iterBench) int {
 		if a.size == b.size {
 			return cmp.Compare(a.name, b.name)
@@ -256,7 +256,7 @@ func Benchmark_Iter_AtoI(b *testing.B) {
 	benchmarks = append(benchmarks, createStringIterBench("itallo", iterStringToIntFilterAlloc)...)
 	benchmarks = append(benchmarks, createStringIterBench("normal", loopStringToIntFilter)...)
 	benchmarks = append(benchmarks, createStringIterBench("palloc", PreloopStringToIntFilter)...)
-	b.Logf("size of cache %d\n", len(strCache))
+	b.Logf("size of cache %d, (largest is %d)\n", len(strCache), len(strCache[(len(strCache)-1)]))
 	slices.SortFunc(benchmarks, func(a, b *iterBench) int {
 		if a.size == b.size {
 			return cmp.Compare(a.name, b.name)
