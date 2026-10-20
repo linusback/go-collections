@@ -2,27 +2,95 @@ package collections
 
 import (
 	"iter"
+	"slices"
+	"strconv"
 )
+
+type Seq[E any] iter.Seq[E]
+type FilterF[I any] = func(I) bool
+type MapF[I, O any] = func(I) O
+
+func SliceToSeq[S ~[]E, E any](slice S) Seq[E] {
+	return func(yield func(E) bool) {
+		for _,e := range slice {
+			if !yield(e) {
+				return
+			}
+		}
+	}
+}
+
+func (s Seq[E]) Filter(ff FilterF[E]) Seq[E] {
+	return func(yield func(E) bool) {
+		for k := range s {
+			if !ff(k) {
+				continue
+			}
+			if !yield(k) {
+				return
+			}
+		}
+	}
+}
+
+func (s Seq[E]) Map[O any](tf MapF[E, O]) Seq[O] {
+	return func(yield func(O) bool) {
+		for k := range s {
+			if !yield(tf(k)) {
+				return
+			}
+		}
+	}
+}
+
+func (s Seq[E]) ToSlice() []E {
+	return slices.Collect(iter.Seq[E](s))
+}
+
+
+
+func (s Seq[E]) Map2[O any](tf MapF[E, O]) Seq[O] {
+	return func(yield func(O) bool) {
+		for k := range s {
+			if !yield(tf(k)) {
+				return
+			}
+		}
+	}
+}
+
+
+
+
 
 type Slice[E any] []E
 
-type SliceTF[I, O any] = func(I) O
-type SliceTFE[I, O any] = func(I) (O, error)
-
-type Result[E any] struct {
-	Val E
-	Err error
+func (s Slice[E]) MapToSlice[O any](tf MapF[E, O]) (result Slice[O]) {
+	result = make(Slice[O], len(s))
+	for i, v := range s {
+		result[i] = tf(v)
+	}
+	return
 }
 
-// type ErrSeq[O any] = iter.Seq2[O, error]
 
-func ToSlice[S ~[]E, E any](s S) Slice[E] {
-	return Slice[E](s)
+
+func Filter[E any](s iter.Seq[E], ff FilterF[E]) iter.Seq[E] {
+	return func(yield func(E) bool) {
+		for k := range s {
+			if !ff(k) {
+				continue
+			}
+			if !yield(k) {
+				return
+			}
+		}
+	}
 }
 
-func (s Slice[E]) Map[O any](tf SliceTF[E, O]) iter.Seq[O] {
+func Map[E, O any](s iter.Seq[E], tf MapF[E, O]) iter.Seq[O] {
 	return func(yield func(O) bool) {
-		for _, k := range s {
+		for k := range s {
 			if !yield(tf(k)) {
 				return
 			}
@@ -30,31 +98,19 @@ func (s Slice[E]) Map[O any](tf SliceTF[E, O]) iter.Seq[O] {
 	}
 }
 
-func (s Slice[E]) MapErr[O any](tf SliceTFE[E, O]) ErrSeq[O] {
-	return func(yield func(O, error) bool) {
-		for _, k := range s {
-			if !yield(tf(k)) {
-				return
-			}
-		}
-	}
+func isEven(i int) bool {
+	return i % 2 == 0
 }
 
-func (s Slice[E]) MapToSlice[O any](tf SliceTF[E, O]) (res Slice[O]) {
-	res = make(Slice[O], len(s))
-	for i, v := range s {
-		res[i] = tf(v)
-	}
-	return
-}
-
-func (s Slice[E]) MapToSliceErr[O any](tf SliceTFE[E, O]) (res Slice[O], err error) {
-	res = make(Slice[O], len(s))
-	for i, v := range s {
-		res[i], err = tf(v)
-		if err != nil {
-			return
+func Normal(integers []int) (res []string) {
+	for _, v := range integers {
+		if v % 2 == 0 {
+			res = append(res, strconv.Itoa(v))
 		}
 	}
-	return
+	return res
+}
+
+func UsingIter(integers []int) (res []string) {
+	return slices.Collect(Map(Filter(slices.Values(integers), isEven), strconv.Itoa)) 
 }
